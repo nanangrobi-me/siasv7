@@ -1746,8 +1746,8 @@
             const mapel = document.getElementById("absen-mapel").value;
             const tgl = document.getElementById("absen-tgl").value;
 
-            if (!kelas) {
-                Swal.fire('Peringatan', 'Pilih kelas terlebih dahulu.', 'warning');
+            if (!kelas || !mapel) {
+                Swal.fire('Peringatan', 'Pilih kelas dan mata pelajaran terlebih dahulu.', 'warning');
                 return;
             }
 
@@ -1757,8 +1757,12 @@
                 return;
             }
 
-            // Perbaikan: Ambil presensi berdasarkan Tanggal dan Kelas secara fleksibel tanpa memaksa kecocokan string mapel yang ketat agar tidak ada data yang terlewat
-            const existingAbsen = (db.Absensi || []).filter(a => String(a.Tanggal) === String(tgl) && String(a.Kelas) === String(kelas));
+            // Perbaikan Mutlak: Ambil data presensi yang cocok dengan Tanggal, Kelas, DAN Mata Pelajaran secara presisi
+            const existingAbsen = (db.Absensi || []).filter(a => 
+                String(a.Tanggal) === String(tgl) && 
+                String(a.Kelas) === String(kelas) && 
+                String(a.MataPelajaran).trim().toLowerCase() === String(mapel).trim().toLowerCase()
+            );
 
             window.activeAbsenSiswa = siswaFiltered.map(s => {
                 const found = existingAbsen.find(item => String(item.NIS) === String(s.NIS));
@@ -1815,9 +1819,9 @@
             const filteredAbsen = allAbsen.filter(a => {
                 if (a.Kelas !== kelas) return false;
                 if (isGuruKelas) {
-                    if (a.MataPelajaran && a.MataPelajaran !== "Guru Kelas") return false;
+                    if (a.MataPelajaran && a.MataPelajaran !== "Guru Kelas" && a.MataPelajaran !== "") return false;
                 } else {
-                    if (a.MataPelajaran !== mapel) return false;
+                    if (String(a.MataPelajaran).trim().toLowerCase() !== String(mapel).trim().toLowerCase()) return false;
                 }
                 if (!a.Tanggal) return false;
                 const d = new Date(a.Tanggal + 'T00:00:00');
@@ -2036,6 +2040,7 @@
             
             let promises = [];
             window.activeAbsenSiswa.forEach(s => {
+                // Kunci ID unik berbasis Tanggal + Kelas + Mapel + NIS agar tidak saling menimpa
                 const recordID = "A_" + tgl + "_" + kelas + "_" + mapel + "_" + s.NIS;
                 const rec = { ID: recordID, Tanggal: tgl, Kelas: kelas, MataPelajaran: mapel, NIS: s.NIS, Nama: s.Nama, Status: s.Status, Keterangan: s.Keterangan };
                 
@@ -2065,7 +2070,7 @@
             }).catch(err => {
                 hideLoader();
                 localStorage.setItem("sias_db", JSON.stringify(db));
-                Swal.fire('Tersimpan Lokal!', 'Data presensi tersimpan di perangkat. (Periksa koneksi server)', 'success');
+                Swal.fire('Tersimpan Lokal!', 'Data presensi tersimpan di perangkat.', 'success');
             });
         }
 
