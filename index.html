@@ -355,7 +355,7 @@
     <script>
         const LOGO_SVG = `<img src="logo.png" alt="Logo SDN 011 Sangatta Selatan" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));" onerror="this.onerror=null; this.src='https://placehold.co/100x100/059669/ffffff?text=011';">`;
 
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwG02Y_0VyR10XUjJ8FXgEsQWnS9bvPTVB3mXgBq_8Ktvj5whU9S0Cj-fOCDgsDFGAvQA/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwQd8RC_hCKOWTtGVMXdnFo9_CHm0sUVVk5bKmB0uLPNga8ILGliHv027Pvw35F7D8v/exec";
 
         const DB_DEFAULTS = {
             User: [
@@ -382,6 +382,13 @@
         };
 
         let db = null;
+
+        // Fungsi akurat membaca hari dan tanggal lokal perangkat (WITA/WIB)
+        function getLocalDateString() {
+            const d = new Date();
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().split('T')[0];
+        }
 
         const State = {
             currentUser: JSON.parse(sessionStorage.getItem("sias_user")) || null,
@@ -1560,7 +1567,7 @@
                             <div class="modal-body">
                                 <input type="hidden" id="jurnal-idx">
                                 <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label">Tanggal</label><input type="date" id="jurnal-tgl" class="form-control" required value="${new Date().toISOString().split('T')[0]}"></div>
+                                    <div class="col-md-6"><label class="form-label">Tanggal</label><input type="date" id="jurnal-tgl" class="form-control" required value="${getLocalDateString()}"></div>
                                     <div class="col-md-6"><label class="form-label">Guru</label><select id="jurnal-guru" class="form-select" required>${optionsGuru}</select></div>
                                     <div class="col-md-4"><label class="form-label">Kelas</label><select id="jurnal-kelas" class="form-select" required onchange="filterMapelDropdownByKelas('jurnal-kelas', 'jurnal-mapel')"><option value="">Pilih</option>${optionsKelas}</select></div>
                                     <div class="col-md-4"><label class="form-label">Mapel</label><select id="jurnal-mapel" class="form-select" required><option value="">Pilih Kelas Dahulu</option></select></div>
@@ -1673,7 +1680,7 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Tanggal</label>
-                            <input type="date" id="absen-tgl" class="form-control" required value="${new Date().toISOString().split('T')[0]}">
+                            <input type="date" id="absen-tgl" class="form-control" required value="${getLocalDateString()}">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Kelas</label>
@@ -2415,11 +2422,11 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Tanggal Mulai</label>
-                        <input type="date" id="cetak-tgl-mulai" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                        <input type="date" id="cetak-tgl-mulai" class="form-control" value="${getLocalDateString()}">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Tanggal Selesai</label>
-                        <input type="date" id="cetak-tgl-selesai" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                        <input type="date" id="cetak-tgl-selesai" class="form-control" value="${getLocalDateString()}">
                     </div>
                     <div class="col-md-2">
                         <button class="btn btn-primary w-100 btn-sm py-2" onclick="generatePreviewLaporan()" style="background-color: var(--primary-color); border:none;">
