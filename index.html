@@ -1634,13 +1634,19 @@
             const allowedClasses = getAllowedClasses();
             const optionsKelas = db.Kelas ? db.Kelas.filter(k => !isGuru || allowedClasses.includes(k.KodeKelas)).map(k => `<option value="${k.KodeKelas}">${k.KodeKelas}</option>`).join('') : '';
             
-            const optionsMapel = `
-                <option value="Guru Kelas">Guru Kelas</option>
-                <option value="PJOK">PJOK</option>
-                <option value="PAI">PAI</option>
-                <option value="PAK">PAK</option>
-                <option value="Bahasa Inggris">Bahasa Inggris</option>
-            `;
+            // Batasi pilihan Mata Pelajaran secara presisi sesuai akun guru yang sedang login
+            let allowedMapelArr = getAllowedMapel();
+            if (isGuru && allowedMapelArr.length > 0) {
+                // Jika guru ybs juga mengampu sebagai guru kelas, masukkan opsi Guru Kelas
+                const teacherObj = db.Guru ? db.Guru.find(g => String(g.Nama).trim() === String(State.currentUser.nama).trim()) : null;
+                if (teacherObj && teacherObj.MataPelajaran && teacherObj.MataPelajaran.toLowerCase().includes('kelas')) {
+                    allowedMapelArr.unshift("Guru Kelas");
+                }
+            } else if (!isGuru) {
+                allowedMapelArr = ["Guru Kelas", "PJOK", "PAI", "PAK", "Bahasa Inggris"];
+            }
+            const uniqueMapel = [...new Set(allowedMapelArr)];
+            const optionsMapel = uniqueMapel.map(m => `<option value="${m}">${m}</option>`).join('');
 
             const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
             const currentMonth = new Date().getMonth();
@@ -1751,8 +1757,8 @@
                 return;
             }
 
-            // Ambil presensi berdasarkan Tanggal, Kelas, dan Mata Pelajaran secara presisi agar tidak tercampur antar akun/mapel
-            const existingAbsen = (db.Absensi || []).filter(a => String(a.Tanggal) === String(tgl) && String(a.Kelas) === String(kelas) && String(a.MataPelajaran) === String(mapel));
+            // Perbaikan: Ambil presensi berdasarkan Tanggal dan Kelas secara fleksibel tanpa memaksa kecocokan string mapel yang ketat agar tidak ada data yang terlewat
+            const existingAbsen = (db.Absensi || []).filter(a => String(a.Tanggal) === String(tgl) && String(a.Kelas) === String(kelas));
 
             window.activeAbsenSiswa = siswaFiltered.map(s => {
                 const found = existingAbsen.find(item => String(item.NIS) === String(s.NIS));
@@ -1926,6 +1932,33 @@
             const nipKepsek = db.Pengaturan ? db.Pengaturan.NIPKepsek : '197503122005012001';
             const currentDateStr = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 
+            // Tentukan penandatangan sebelah kanan berdasarkan login atau mapel yang dipilih
+            let rightSignTitle = `Wali Kelas ${kelas || ''}`;
+            let rightSignName = "( .................................................... )";
+            let rightSignNip = "NIP. ...............................................";
+
+            if (State.currentUser && State.currentUser.role === 'Guru') {
+                const loggedInTeacherName = State.currentUser.nama;
+                // Cek apakah guru yang login adalah guru mapel khusus atau wali kelas
+                if (!isGuruKelas) {
+                    rightSignTitle = `Guru ${mapel}`;
+                } else {
+                    rightSignTitle = `Wali Kelas ${kelas || ''}`;
+                }
+                rightSignName = `<strong>${loggedInTeacherName}</strong>`;
+                
+                // Cari NIP guru yang sedang login dari database Guru
+                if (db.Guru) {
+                    const foundGuru = db.Guru.find(g => String(g.Nama).trim().toLowerCase() === String(loggedInTeacherName).trim().toLowerCase());
+                    if (foundGuru && foundGuru.NIP) {
+                        rightSignNip = `NIP. ${foundGuru.NIP}`;
+                    }
+                }
+            } else if (!isGuruKelas) {
+                // Jika admin membuka rekap mapel
+                rightSignTitle = `Guru ${mapel}`;
+            }
+
             Swal.fire({
                 title: `<h4 class="fw-bold text-dark">${modalTitle}</h4>`,
                 html: `
@@ -1949,9 +1982,9 @@
                                 <p class="small text-muted mb-0">NIP. ${nipKepsek}</p>
                             </div>
                             <div class="col-6 text-center">
-                                <p class="mb-5">Sangatta Selatan, ${currentDateStr}<br><strong>Wali Kelas ${kelas || ''}</strong></p>
-                                <p class="fw-bold text-decoration-underline mb-0 mt-5">( .................................................... )</p>
-                                <p class="small text-muted mb-0">NIP. ...............................................</p>
+                                <p class="mb-5">Sangatta Selatan, ${currentDateStr}<br><strong>${rightSignTitle}</strong></p>
+                                <p class="mb-0 mt-5">${rightSignName}</p>
+                                <p class="small text-muted mb-0">${rightSignNip}</p>
                             </div>
                         </div>
                     </div>
