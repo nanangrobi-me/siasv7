@@ -527,7 +527,7 @@
         }
 
         function initAppDatabase() {
-            // Muat instan dari cache lokal demi kecepatan maksimal tanpa jeda loading awal
+            // Muat instan dari cache lokal demi kecepatan maksimal
             try {
                 db = JSON.parse(localStorage.getItem("sias_db"));
             } catch (e) {
@@ -541,7 +541,7 @@
             window.db = db;
             initApp();
 
-            // Ambil pembaruan dari GAS di background secara asinkronus (tidak memblokir render pertama)
+            // Paksa pembaruan data & segarkan layar di belakang layar (Sinkronisasi antar gawai)
             fetch(GAS_API_URL + "?action=getAllData")
                 .then(res => res.json())
                 .then(data => {
@@ -549,6 +549,10 @@
                         db = data;
                         localStorage.setItem("sias_db", JSON.stringify(db));
                         window.db = db;
+                        // Segarkan ulang tampilan agar hasil absen dari gawai lain langsung muncul!
+                        if (State.currentUser && State.currentView) {
+                            switchView(State.currentView);
+                        }
                     }
                 })
                 .catch(err => console.warn("Sinkronisasi background dilewati:", err));
