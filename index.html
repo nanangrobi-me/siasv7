@@ -370,7 +370,7 @@
     <script>
         const LOGO_SVG = `<img src="logo.png" alt="Logo SDN 011 Sangatta Selatan" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));" onerror="this.onerror=null; this.src='https://placehold.co/100x100/059669/ffffff?text=011';">`;
 
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwmfmTBd0NkPGc8sa7vn1tINqvm3naHis76i64GyNsxIpls91KkyaMu02HcfJ-Cv-NU-Q/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwG02Y_0VyR10XUjJ8FXgEsQWnS9bvPTVB3mXgBq_8Ktvj5whU9S0Cj-fOCDgsDFGAvQA/exec";
 
         const DB_DEFAULTS = {
             User: [
@@ -1760,11 +1760,11 @@
                 return;
             }
 
-            // Cek apakah sudah ada data absensi sebelumnya untuk tanggal & kelas ini
-            const existingAbsen = (db.Absensi || []).filter(a => a.Tanggal === tgl && a.Kelas === kelas && a.MataPelajaran === mapel);
+            // Ambil presensi berdasarkan Tanggal, Kelas, dan Mata Pelajaran secara presisi agar tidak tercampur antar akun/mapel
+            const existingAbsen = (db.Absensi || []).filter(a => String(a.Tanggal) === String(tgl) && String(a.Kelas) === String(kelas) && String(a.MataPelajaran) === String(mapel));
 
             window.activeAbsenSiswa = siswaFiltered.map(s => {
-                const found = existingAbsen.find(item => item.NIS === s.NIS);
+                const found = existingAbsen.find(item => String(item.NIS) === String(s.NIS));
                 return {
                     NIS: s.NIS,
                     Nama: s.Nama,
@@ -1823,7 +1823,7 @@
                     if (a.MataPelajaran !== mapel) return false;
                 }
                 if (!a.Tanggal) return false;
-                const d = new Date(a.Tanggal);
+                const d = new Date(a.Tanggal + 'T00:00:00');
                 return d.getMonth() === bulan && d.getFullYear() === tahun;
             });
 
@@ -1882,7 +1882,15 @@
 
                 let headerPertemuanHtml = '';
                 uniqueDates.forEach((ud, pIdx) => {
-                    headerPertemuanHtml += `<th class="text-center" style="font-size:11px;">P${pIdx + 1}<br><small style="font-size:9px;">${ud !== '-' ? ud.split('-').slice(1).join('/') : '-'}</small></th>`;
+                    let displayDate = "-";
+                    if (ud !== '-') {
+                        // Memecah string tanggal YYYY-MM-DD secara presisi tanpa pergeseran zona waktu
+                        const parts = ud.split('-');
+                        if (parts.length === 3) {
+                            displayDate = `${parts[2]}/${parts[1]}`;
+                        }
+                    }
+                    headerPertemuanHtml += `<th class="text-center" style="font-size:11px;">P${pIdx + 1}<br><small style="font-size:9px;">${displayDate}</small></th>`;
                 });
 
                 tableHeaderHtml = `<tr><th rowspan="2" class="text-center align-middle">No</th><th rowspan="2" class="text-start align-middle">Nama Lengkap Siswa</th><th colspan="${uniqueDates.length}" class="text-center bg-secondary text-white">Pertemuan Bulanan (${namaBulan})</th><th colspan="5" class="text-center bg-dark text-white">Rekap</th></tr><tr>${headerPertemuanHtml}<th class="bg-success text-white">H</th><th class="bg-primary text-white">I</th><th class="bg-warning text-white">S</th><th class="bg-danger text-white">A</th><th class="bg-info text-white">%</th></tr>`;
@@ -2000,10 +2008,11 @@
 
             if (!db.Absensi) db.Absensi = [];
             window.activeAbsenSiswa.forEach(s => {
-                const recordID = "A_" + tgl + "_" + kelas + "_" + s.NIS;
+                // ID unik presensi berbasis Tanggal, Kelas, Mapel, dan NIS agar presisi dan tidak saling menimpa
+                const recordID = "A_" + tgl + "_" + kelas + "_" + mapel + "_" + s.NIS;
                 const rec = { ID: recordID, Tanggal: tgl, Kelas: kelas, MataPelajaran: mapel, NIS: s.NIS, Nama: s.Nama, Status: s.Status, Keterangan: s.Keterangan };
                 
-                const existingIdx = db.Absensi.findIndex(item => item.ID === recordID);
+                const existingIdx = db.Absensi.findIndex(item => String(item.ID) === String(recordID));
                 if (existingIdx !== -1) {
                     db.Absensi[existingIdx] = rec;
                 } else {
@@ -2011,7 +2020,7 @@
                 }
                 saveDB("Absensi", rec, "ID", rec.ID);
             });
-            Swal.fire('Tersimpan!', 'Data presensi siswa berhasil disimpan ke sistem.', 'success');
+            Swal.fire('Tersimpan!', 'Data presensi siswa berhasil disimpan ke sistem dengan presisi.', 'success');
         }
 
         function getNilaiHTML() {
@@ -2112,10 +2121,10 @@
                 return;
             }
 
-            const existingNilai = (db.Nilai || []).filter(n => n.Semester === sem && n.Kelas === kelas && n.MataPelajaran === mapel);
+            const existingNilai = (db.Nilai || []).filter(n => String(n.Semester) === String(sem) && String(n.Kelas) === String(kelas) && String(n.MataPelajaran) === String(mapel));
 
             window.activeNilaiSiswa = siswaFiltered.map(s => {
-                const found = existingNilai.find(item => item.NIS === s.NIS);
+                const found = existingNilai.find(item => String(item.NIS) === String(s.NIS));
                 return {
                     NIS: s.NIS,
                     Nama: s.Nama,
@@ -2127,9 +2136,9 @@
                     TP6: found ? (found.TP6 ?? '') : '',
                     Sumatif: found ? (found.Sumatif ?? '') : '',
                     Projek: found ? (found.Projek ?? '') : '',
-                    NilaiAkhir: found ? (found.NilaiAkhir || 0) : 0,
-                    Predikat: found ? (found.Predikat || '-') : '-',
-                    Capaian: found ? (found.Capaian || 'Belum ada nilai yang diinputkan.') : 'Belum ada nilai yang diinputkan.'
+                    NilaiAkhir: found && found.NilaiAkhir !== '' && !isNaN(found.NilaiAkhir) ? Number(found.NilaiAkhir) : 0,
+                    Predikat: found && found.Predikat ? found.Predikat : '-',
+                    Capaian: found && found.Capaian ? found.Capaian : 'Belum ada nilai yang diinputkan.'
                 };
             });
 
@@ -2179,16 +2188,16 @@
 
                 if (na >= 85) {
                     predikat = 'A';
-                    capaian = 'Menunjukkan penguasaan yang sangat baik dalam seluruh tujuan pembelajaran.';
+                    capaian = 'Menunjukkan penguasaan kompetensi yang sangat matang.';
                 } else if (na >= 75) {
                     predikat = 'B';
-                    capaian = 'Menunjukkan penguasaan yang baik dalam sebagian besar tujuan pembelajaran.';
+                    capaian = 'Menguasai kompetensi dasar dengan baik.';
                 } else if (na >= 65) {
                     predikat = 'C';
-                    capaian = 'Menunjukkan penguasaan yang cukup dan perlu bimbingan pada beberapa tujuan pembelajaran.';
+                    capaian = 'Membutuhkan bimbingan tambahan pada beberapa indikator.';
                 } else {
                     predikat = 'D';
-                    capaian = 'Perlu bimbingan intensif dalam memahami materi dan tujuan pembelajaran.';
+                    capaian = 'Perlu bimbingan intensif dalam memahami materi.';
                 }
             }
 
@@ -2239,7 +2248,7 @@
                     Capaian: s.Capaian 
                 };
 
-                const existingIdx = db.Nilai.findIndex(item => item.ID === recordID);
+                const existingIdx = db.Nilai.findIndex(item => String(item.ID) === String(recordID));
                 if (existingIdx !== -1) {
                     db.Nilai[existingIdx] = rec;
                 } else {
@@ -2247,7 +2256,7 @@
                 }
                 saveDB("Nilai", rec, "ID", rec.ID);
             });
-            Swal.fire('Tersimpan!', 'Nilai capaian siswa berhasil disimpan ke sistem.', 'success');
+            Swal.fire('Tersimpan!', 'Nilai capaian siswa berhasil disimpan ke sistem dengan presisi tinggi.', 'success');
         }
 
         function exportNilaiExcel() {
