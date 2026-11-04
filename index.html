@@ -2038,7 +2038,7 @@
             
             showLoader("Menyimpan Presensi...");
             
-            let promises = [];
+            let batchData = [];
             window.activeAbsenSiswa.forEach(s => {
                 // Kunci ID unik berbasis Tanggal + Kelas + Mapel + NIS agar tidak saling menimpa
                 const recordID = "A_" + tgl + "_" + kelas + "_" + mapel + "_" + s.NIS;
@@ -2050,23 +2050,19 @@
                 } else {
                     db.Absensi.push(rec);
                 }
-                
-                // Sinkronisasi langsung ke Google Sheet secara aman
-                promises.push(
-                    fetchAPI({
-                        action: 'saveRecord',
-                        sheetName: 'Absensi',
-                        data: rec,
-                        keyColumn: 'ID',
-                        keyValue: rec.ID
-                    })
-                );
+                batchData.push(rec);
             });
 
-            Promise.all(promises).then(() => {
+            // Kirim SEMUA data sekaligus dalam 1 paket (Batch System) -> Jauh lebih cepat!
+            fetchAPI({
+                action: 'saveBatchRecords',
+                sheetName: 'Absensi',
+                dataArray: batchData,
+                keyColumn: 'ID'
+            }).then(() => {
                 hideLoader();
                 localStorage.setItem("sias_db", JSON.stringify(db));
-                Swal.fire('Tersimpan!', 'Data presensi siswa berhasil disimpan ke Google Sheets dengan presisi dan sinkron.', 'success');
+                Swal.fire('Tersimpan!', 'Seluruh data presensi kelas berhasil disimpan tanpa ada yang hilang.', 'success');
             }).catch(err => {
                 hideLoader();
                 localStorage.setItem("sias_db", JSON.stringify(db));
@@ -2280,7 +2276,7 @@
             
             showLoader("Menyimpan Nilai...");
 
-            let promises = [];
+            let batchData = [];
             window.activeNilaiSiswa.forEach(s => {
                 const recordID = "N_" + sem + "_" + kelas + "_" + mapel + "_" + s.NIS;
                 const rec = { 
@@ -2309,22 +2305,19 @@
                 } else {
                     db.Nilai.push(rec);
                 }
-                
-                promises.push(
-                    fetchAPI({
-                        action: 'saveRecord',
-                        sheetName: 'Nilai',
-                        data: rec,
-                        keyColumn: 'ID',
-                        keyValue: rec.ID
-                    })
-                );
+                batchData.push(rec);
             });
 
-            Promise.all(promises).then(() => {
+            // Kirim SEMUA data nilai sekaligus dalam 1 paket (Batch System)
+            fetchAPI({
+                action: 'saveBatchRecords',
+                sheetName: 'Nilai',
+                dataArray: batchData,
+                keyColumn: 'ID'
+            }).then(() => {
                 hideLoader();
                 localStorage.setItem("sias_db", JSON.stringify(db));
-                Swal.fire('Tersimpan!', 'Nilai capaian siswa berhasil disimpan ke Google Sheets dengan presisi tinggi tanpa data hilang.', 'success');
+                Swal.fire('Tersimpan!', 'Seluruh nilai akademik berhasil disimpan ke database dengan utuh.', 'success');
             }).catch(err => {
                 hideLoader();
                 localStorage.setItem("sias_db", JSON.stringify(db));
