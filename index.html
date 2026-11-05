@@ -1290,7 +1290,7 @@
                                             <option value="Guru Kelas">Guru Kelas</option>
                                             <option value="Guru Pendidikan Jasmani Olahraga dan Kesehatan">Guru Pendidikan Jasmani Olahraga dan Kesehatan</option>
                                             <option value="Guru Pendidikan Agama Islam">Guru Pendidikan Agama Islam</option>
-                                            <option value="Guru PAK">Guru PAK</option>
+                                            <option value="Guru Pendidikan Agama Kristen">Guru Pendidikan Agama Kristen</option>
                                             <option value="Guru Bahasa Inggris">Guru Bahasa Inggris</option>
                                         </select>
                                     </div>
@@ -1654,7 +1654,7 @@
                     allowedMapelArr.unshift("Guru Kelas");
                 }
             } else if (!isGuru) {
-                allowedMapelArr = ["Guru Kelas", "Pendidikan Jasmani Olahraga dan Kesehatan", "Pendidikan Agama Islam", "PAK", "Bahasa Inggris"];
+                allowedMapelArr = ["Guru Kelas", "Pendidikan Jasmani Olahraga dan Kesehatan", "Pendidikan Agama Islam", "Pendidikan Agama Kristen", "Pendidikan Bahasa Inggris"];
             }
             const uniqueMapel = [...new Set(allowedMapelArr)];
             const optionsMapel = uniqueMapel.map(m => `<option value="${m}">${m}</option>`).join('');
